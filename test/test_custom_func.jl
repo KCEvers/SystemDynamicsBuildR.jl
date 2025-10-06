@@ -53,7 +53,7 @@ using DataInterpolations
     @testset "Signal generation" begin
         @testset "ramp - basic functionality" begin
             times = [0.0, 10.0]
-            r = make_ramp(times, u"s", 2.0, 6.0, 10.0)
+            r = make_ramp(u"s", times, 2.0, 6.0, 10.0)
             
             @test r(0.0) ≈ 0.0   # Before ramp
             @test r(2.0) ≈ 0.0   # Start of ramp
@@ -64,19 +64,19 @@ using DataInterpolations
 
         @testset "ramp - negative height" begin
             times = [0.0, 10.0]
-            r = make_ramp(times, u"s", 2.0, 6.0, -10.0)
+            r = make_ramp(u"s", times, 2.0, 6.0, -10.0)
             
             @test r(4.0) ≈ -5.0  # Decreasing ramp
         end
 
         @testset "ramp - assertions" begin
             times = [0.0, 10.0]
-            @test_throws AssertionError make_ramp(times, u"s", 6.0, 2.0, 10.0)  # finish < start
+            @test_throws AssertionError make_ramp(u"s", times, 6.0, 2.0, 10.0)  # finish < start
         end
 
         @testset "make_step - basic functionality" begin
             times = [0.0, 10.0]
-            s = make_step(times, u"s", 5.0, 2.0)
+            s = make_step(u"s", times, 5.0, 2.0)
             
             @test s(4.9) ≈ 0.0  # Before step
             @test s(5.0) ≈ 2.0  # At step
@@ -86,7 +86,7 @@ using DataInterpolations
 
         @testset "pulse - single pulse" begin
             times = [0.0, 20.0]
-            p = make_pulse(times, u"s", 5.0, 1.0, 2.0)
+            p = make_pulse(u"s", times, 5.0, 1.0, 2.0)
             
             @test p(4.0) ≈ 0.0  # Before pulse
             @test p(5.5) ≈ 1.0  # During pulse
@@ -96,7 +96,7 @@ using DataInterpolations
 
         @testset "pulse - repeated pulses" begin
             times = [0.0, 30.0]
-            p = make_pulse(times, u"s", 5.0, 1.0, 2.0, 10.0)  # Every 10 seconds
+            p = make_pulse(u"s", times, 5.0, 1.0, 2.0, 10.0)  # Every 10 seconds
             
             @test p(5.5) ≈ 1.0   # First pulse
             @test p(8.0) ≈ 0.0   # Between pulses
@@ -106,13 +106,13 @@ using DataInterpolations
 
         @testset "pulse - width validation" begin
             times = [0.0, 20.0]
-            @test_throws ArgumentError make_pulse(times, u"s", 5.0, 1.0, 0.0)
-            @test_throws ArgumentError make_pulse(times, u"s", 5.0, 1.0, -1.0)
+            @test_throws ArgumentError make_pulse(u"s", times, 5.0, 1.0, 0.0)
+            @test_throws ArgumentError make_pulse(u"s", times, 5.0, 1.0, -1.0)
         end
 
         @testset "seasonal - basic wave" begin
             times = [0.0u"yr", 2.0u"yr"]
-            wave = make_seasonal(times, 0.1u"yr", 1.0u"yr", 0.0u"yr")
+            wave = make_seasonal(0.1u"yr", times, 1.0u"yr", 0.0u"yr")
             
             @test wave(0.0u"yr") ≈ 1.0   # Peak
             @test wave(0.25u"yr") ≈ 0.0 atol=0.01  # Zero crossing
@@ -123,7 +123,7 @@ using DataInterpolations
 
         @testset "seasonal - with phase shift" begin
             times = [0.0u"yr", 2.0u"yr"]
-            wave = make_seasonal(times, 0.1u"yr", 1.0u"yr", 0.25u"yr")
+            wave = make_seasonal(0.1u"yr", times, 1.0u"yr", 0.25u"yr")
             
             @test wave(0.0u"yr") ≈ 0.0 atol=0.01  # Shifted by quarter period
             @test wave(0.25u"yr") ≈ 1.0 atol=0.1  # Peak at shifted position (with tolerance for sampling)
@@ -131,8 +131,8 @@ using DataInterpolations
 
         @testset "seasonal - period validation" begin
             times = [0.0u"yr", 2.0u"yr"]
-            @test_throws AssertionError make_seasonal(times, 0.1u"yr", 0.0u"yr")
-            @test_throws AssertionError make_seasonal(times, 0.1u"yr", -1.0u"yr")
+            @test_throws AssertionError make_seasonal(0.1u"yr", times, 0.0u"yr")
+            @test_throws AssertionError make_seasonal(0.1u"yr", times, -1.0u"yr")
         end
     end
 
@@ -314,11 +314,11 @@ using DataInterpolations
         @testset "Signal generation with units" begin
             # Test ramp with Unitful times
             times = [0.0u"yr", 10.0u"yr"]
-            r = make_ramp(times, u"yr", 2.0u"yr", 6.0u"yr", 100.0)
+            r = make_ramp(u"yr", times, 2.0u"yr", 6.0u"yr", 100.0)
             @test r(4.0u"yr") ≈ 50.0
             
             # Test step with units
-            s = make_step(times, u"yr", 5.0u"yr", 10.0)
+            s = make_step(u"yr", times, 5.0u"yr", 10.0)
             @test s(4.0u"yr") ≈ 0.0
             @test s(6.0u"yr") ≈ 10.0
         end
@@ -337,7 +337,7 @@ using DataInterpolations
         @testset "Interpolation of signal" begin
             # Create a ramp and sample it with interpolation
             times = [0.0, 10.0]
-            r = make_ramp(times, u"s", 0.0, 10.0, 100.0)
+            r = make_ramp(u"s", times, 0.0, 10.0, 100.0)
             
             # Sample at specific points
             sample_times = [0.0, 2.5, 5.0, 7.5, 10.0]

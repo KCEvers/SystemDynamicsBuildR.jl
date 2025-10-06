@@ -107,7 +107,7 @@ end
 # ============================================================================
 
 """
-    make_ramp(times, time_units, start, finish, height=1.0)
+    make_ramp(time_units, times, start, finish, height=1.0)
 
 Create a ramp signal that linearly increases from 0 to `height` between `start` and `finish` times.
 
@@ -115,8 +115,8 @@ The ramp starts at height 0 at time `start`, increases linearly, and reaches `he
 Outside this range, the value is constant (0 before start, height after finish).
 
 # Arguments
-- `times`: Time vector or range (start, end)
 - `time_units`: Units for time (e.g., u"yr", u"d")
+- `times`: Time vector or range (start, end)
 - `start`: Start time of ramp
 - `finish`: End time of ramp
 - `height=1.0`: Maximum height of ramp (can be negative for decreasing ramp)
@@ -126,12 +126,12 @@ Outside this range, the value is constant (0 before start, height after finish).
 
 # Examples
 ```julia
-julia> r = make_ramp([0.0, 10.0], u"yr", 2.0, 5.0, 10.0)
+julia> r = make_ramp(u"yr", [0.0, 10.0], 2.0, 5.0, 10.0)
 julia> r(3.5)  # Halfway through ramp
 5.0
 ```
 """
-function make_ramp(times, time_units, start, finish, height=1.0)
+function make_ramp(time_units, times, start, finish, height=1.0)
     @assert start < finish "The finish time of the ramp cannot be before the start time. To specify a decreasing ramp, set the height to a negative value."
 
     # Normalize units between times and ramp parameters
@@ -164,13 +164,13 @@ function make_ramp(times, time_units, start, finish, height=1.0)
 end
 
 """
-    make_step(times, time_units, start, height=1.0)
+    make_step(time_units, times, start, height=1.0)
 
 Create a step signal that jumps from 0 to `height` at time `start`.
 
 # Arguments
-- `times`: Time vector or range
 - `time_units`: Units for time
+- `times`: Time vector or range
 - `start`: Time when step occurs
 - `height=1.0`: Height of step
 
@@ -179,14 +179,14 @@ Create a step signal that jumps from 0 to `height` at time `start`.
 
 # Examples
 ```julia
-julia> s = make_step([0.0, 10.0], u"s", 5.0, 2.0)
+julia> s = make_step(u"s", [0.0, 10.0], 5.0, 2.0)
 julia> s(4.9)  # Before step
 0.0
 julia> s(5.1)  # After step
 2.0
 ```
 """
-function make_step(times, time_units, start, height=1.0)
+function make_step(time_units, times, start, height=1.0)
     # Normalize units
     start = _normalize_single_time(times, time_units, start)
     
@@ -206,13 +206,13 @@ function make_step(times, time_units, start, height=1.0)
 end
 
 """
-    make_pulse(times, time_units, start, height=1.0, width=1.0*time_units, repeat_interval=nothing)
+    make_pulse(time_units, times, start, height=1.0, width=1.0*time_units, repeat_interval=nothing)
 
 Create a pulse signal with specified width and optional repetition.
 
 # Arguments
-- `times`: Time vector or range
 - `time_units`: Units for time
+- `times`: Time vector or range
 - `start`: Start time of first pulse
 - `height=1.0`: Height of pulse
 - `width=1.0*time_units`: Duration of each pulse
@@ -223,14 +223,14 @@ Create a pulse signal with specified width and optional repetition.
 
 # Examples
 ```julia
-julia> p = make_pulse([0.0, 20.0], u"s", 5.0, 1.0, 2.0, 10.0)  # Pulse every 10s
+julia> p = make_pulse(u"s", [0.0, 20.0], 5.0, 1.0, 2.0, 10.0)  # Pulse every 10s
 julia> p(6.0)  # During first pulse
 1.0
 julia> p(8.0)  # Between pulses
 0.0
 ```
 """
-function make_pulse(times, time_units, start, height=1.0, width=1.0 * time_units, repeat_interval=nothing)
+function make_pulse(time_units, times, start, height=1.0, width=1.0 * time_units, repeat_interval=nothing)
     # Validate width
     width_value = eltype(width) <: Unitful.Quantity ? Unitful.ustrip(convert_u(width, time_units)) : width
     if width_value <= 0.0
@@ -280,8 +280,8 @@ Create a seasonal cosine wave with specified period and phase shift.
 The wave oscillates between -1 and 1 with the formula: cos(2π(t - shift)/period)
 
 # Arguments
-- `times`: Time range [start, end]
 - `dt`: Time step for sampling
+- `times`: Time range [start, end]
 - `period=u"1yr"`: Period of oscillation
 - `shift=u"0yr"`: Phase shift (positive = delay)
 
@@ -290,14 +290,14 @@ The wave oscillates between -1 and 1 with the formula: cos(2π(t - shift)/period
 
 # Examples
 ```julia
-julia> wave = make_seasonal([0.0u"yr", 2.0u"yr"], 0.1u"yr", 1.0u"yr")
+julia> wave = make_seasonal(0.1u"yr", [0.0u"yr", 2.0u"yr"], 1.0u"yr")
 julia> wave(0.0u"yr")  # Peak of cosine
 1.0
 julia> wave(0.5u"yr")  # Trough
 -1.0
 ```
 """
-function make_seasonal(times, dt, period=u"1yr", shift=u"0yr")
+function make_seasonal(dt, times, period=u"1yr", shift=u"0yr")
     @assert Unitful.ustrip(period) > 0 "The period of the seasonal wave must be greater than 0."
 
     time_vec = times[1]:dt:times[2]
