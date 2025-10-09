@@ -60,6 +60,24 @@ using DataInterpolations
             @test r(4.0) ≈ 5.0   # Middle of ramp
             @test r(6.0) ≈ 10.0  # End of ramp
             @test r(8.0) ≈ 10.0  # After ramp
+
+            # Also works with start time after the end of times
+            r2 = make_ramp(u"s", times, 15.0, 20.0, 10.0)
+            @test r2(10.0) ≈ 0.0
+            @test r2(20.0) ≈ 0.0
+
+            # Also works with start time before the start of times
+            r3 = make_ramp(u"s", times, -5.0, 5.0, 10.0)
+            @test r3(0.0) ≈ 5.0
+            @test r3(2.5) ≈ 7.5
+            @test r3(5.0) ≈ 10.0
+            @test r3(7.5) ≈ 10.0
+
+            # Also works with start time before the start of times
+            r4 = make_ramp(u"s", times, -5.0, -1.0, 10.0)
+            @test r4(0.0) ≈ 10.0
+            @test r4(10.0) ≈ 10.0
+            
         end
 
         @testset "ramp - negative height" begin
@@ -82,6 +100,20 @@ using DataInterpolations
             @test s(5.0) ≈ 2.0  # At step
             @test s(5.1) ≈ 2.0  # After step
             @test s(10.0) ≈ 2.0
+
+            # Also works with start time after the end of times
+            s2 = make_step(u"s", times, 15.0, 3.0)
+            @test s2(10.0) ≈ 0.0    
+
+            # Also works with start time before the start of times
+            s3 = make_step(u"s", times, -5.0, 4.0)
+            @test s3(0.0) ≈ 4.0
+            @test s3(5.0) ≈ 4.0
+
+            # Works with negative height
+            s4 = make_step(u"s", times, 5.0, -2.0)
+            @test s4(5.0) ≈ -2.0
+
         end
 
         @testset "pulse - single pulse" begin
@@ -92,6 +124,35 @@ using DataInterpolations
             @test p(5.5) ≈ 1.0  # During pulse
             @test p(6.5) ≈ 1.0  # Still during pulse
             @test p(7.1) ≈ 0.0  # After pulse
+
+            # Repeat pulse
+            p_r = make_pulse(u"s", times, 1.0, 1.0, 0.5, 2.0)
+            @test p_r(0.5) ≈ 0.0
+            @test p_r(1.0) ≈ 1.0
+            @test p_r(1.4) ≈ 1.0
+            @test p_r(1.6) ≈ 0.0
+            @test p_r(3.0) ≈ 1.0
+            @test p_r(3.4) ≈ 1.0
+            @test p_r(3.6) ≈ 0.0
+
+            # Edge cases
+            # Also works with pulse starting before the time range
+            p2 = make_pulse(u"s", times, -5.0, 1.0, 2.0)
+            @test p2(-5.0) ≈ 1.0
+            @test p2(-3.0) ≈ 0.0
+            @test p2(0.0) ≈ 0.0
+            @test p2(10.0) ≈ 0.0
+
+            # Also works with pulse starting after the time range
+            p3 = make_pulse(u"s", times, 25.0, 1.0, 2.0)
+            @test p3(20.0) ≈ 0.0
+
+            # Also works if width is equal to repeat_interval
+            p4 = make_pulse(u"s", times, 5.0, 2.0, 1.0, 1.0)
+            @test p4(0.0) ≈ 0.0
+            @test p4(5.0) ≈ 2.0
+            @test p4(20.0) ≈ 2.0
+
         end
 
         @testset "pulse - repeated pulses" begin

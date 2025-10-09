@@ -150,11 +150,22 @@ function make_ramp(time_units, times, start, finish, height=1.0)
         add_y = convert_u(0.0, Unitful.unit(start_h_ramp))
     end
 
+    if start > last(times)
+        # If the pulse starts after the end of the time range, return a zero function    
+        func = itp(times, [add_y; add_y], method="constant", extrapolation="nearest")
+        return func
+    elseif finish < first(times)
+        # If the ramp finishes before the start of the time range, return a constant height function
+        func = itp(times, [height; height], method="constant", extrapolation="nearest")
+        return func
+    end   
+       
+
     x = [start, finish]
     y = [start_h_ramp, height]
 
     # If the ramp is after the start time, add a zero at the start
-    if start > first(times)
+    if start > first(times) || finish < first(times)
         x = [first(times); x]
         y = [add_y; y]
     end
@@ -180,7 +191,7 @@ Create a step signal that jumps from 0 to `height` at time `start`.
 # Examples
 ```julia
 julia> s = make_step(u"s", [0.0, 10.0], 5.0, 2.0)
-julia> s(4.9)  # Before step
+julia> s(4.9)  # Before step 
 0.0
 julia> s(5.1)  # After step
 2.0
@@ -191,6 +202,12 @@ function make_step(time_units, times, start, height=1.0)
     start = _normalize_single_time(times, time_units, start)
     
     add_y = eltype(height) <: Unitful.Quantity ? convert_u(0.0, Unitful.unit(height)) : 0.0
+
+    # If the step starts after the end of the time range, return a zero function    
+    if start > last(times)
+        func = itp(times, [add_y; add_y], method="constant", extrapolation="nearest")
+        return func
+    end   
 
     x = [start, times[2]]
     y = [height, height]
@@ -240,25 +257,44 @@ function make_pulse(time_units, times, start, height=1.0, width=1.0 * time_units
     # Normalize units
     start, width, repeat_interval = _normalize_pulse_units(times, time_units, start, width, repeat_interval)
 
-    # Define start and end times of pulses
-    last_time = last(times)
-    step_size = isnothing(repeat_interval) ? last_time * 2 : repeat_interval
-    start_ts = collect(start:step_size:last_time)
-    end_ts = start_ts .+ width
-
-    # Build signal as vectors of times and y-values
-    signal_times = [start_ts; end_ts]
-    signal_y = [fill(height, length(start_ts)); fill(0, length(end_ts))]
-
     add_y = eltype(height) <: Unitful.Quantity ? convert_u(0.0, Unitful.unit(height)) : 0.0
 
+    if start > last(times)
+        # If the pulse starts after the end of the time range, return a zero function    
+        func = itp(times, [add_y; add_y], method="constant", extrapolation="nearest")
+        return func
+    end   
+
+    # Define start and end times of pulses
+    last_time = last(times)
+
+    if isnothing(repeat_interval)
+        # Single pulse
+        signal_times = [start; start + width]
+        signal_y = [height; add_y]
+    else 
+
+        start_ts = collect(start:repeat_interval:last_time)
+
+        # When width is equal or greater than repeat interval, it's basically continuously 1
+        if width >= repeat_interval
+            signal_times = [start_ts; ]
+            signal_y = [fill(height, length(start_ts)); ]
+        else
+            # Build signal as vectors of times and y-values
+            end_ts = start_ts .+ width
+            signal_times = [start_ts; end_ts]
+            signal_y = [fill(height, length(start_ts)); fill(0, length(end_ts))]
+        end
+    end
+
     # Add zeros at boundaries if needed
-    if minimum(start_ts) > first(times)
+    if minimum(signal_times) > first(times)
         signal_times = [first(times); signal_times]
         signal_y = [add_y; signal_y]
     end
 
-    if maximum(end_ts) < last_time
+    if maximum(signal_times) < last_time
         signal_times = [signal_times; last_time]
         signal_y = [signal_y; add_y]
     end
